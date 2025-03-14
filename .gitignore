@@ -1,0 +1,7 @@
+# .gitignore
+credentials.json
+.env
+temp.wav
+response_audio.mp3
+test_recording.wav
+temp_audio.wav
