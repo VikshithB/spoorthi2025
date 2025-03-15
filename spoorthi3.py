@@ -10,9 +10,16 @@ import scipy.io.wavfile as wav
 import time
 import subprocess
 from typing import Tuple
+import torch
 
 # Suppress FP16 warnings from Whisper
 warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
+
+def record_audio(duration=5, sample_rate=16000):
+    print("Recording snippet...")
+    audio_data = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=1, dtype=np.int16)
+    sd.wait()  # Wait for recording to complete
+    return np.squeeze(audio_data)  # Convert to 1D array if needed
 
 # -------------------- Google Docs Integration --------------------
 from google.oauth2 import service_account
@@ -58,7 +65,11 @@ def transcribe_audio(audio_file_path: str, model_size: str = "medium") -> str:
     print("Loading Whisper model (medium)...")
     model = whisper.load_model(model_size)
     print("Transcribing audio...")
-    result = model.transcribe(audio_file_path, task="transcribe")
+    # Load audio and convert it to floating point
+    audio = whisper.load_audio(audio_file_path)
+    audio = torch.tensor(audio, dtype=torch.float32)  # Convert to float32
+    
+    result = model.transcribe(audio, task="transcribe")
     return result["text"]
 
 # -------------------- STEP 2: Knowledge Base & Vector Store Setup --------------------
@@ -210,7 +221,7 @@ def run_chatbot():
     session_active = False
     empty_count = 0  # Count successive empty inputs
     print("Awaiting wake word 'hi agent' to start session...")
-
+    
     while True:
         # Record a snippet
         print("\nRecording snippet...")
